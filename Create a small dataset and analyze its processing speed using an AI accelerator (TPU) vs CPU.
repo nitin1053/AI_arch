@@ -2,41 +2,32 @@ import tensorflow as tf
 import time
 import numpy as np
 
-# Create a small synthetic dataset for binary classification
-def create_synthetic_data(num_samples=1000, num_features=10):
-    X = np.random.random((num_samples, num_features))  # Random feature data
-    y = np.random.randint(0, 2, size=(num_samples, 1))  # Random binary labels
-    return X, y
-
-# Define a simple neural network model
-def create_model(input_shape):
-    model = tf.keras.Sequential([
+# Create dataset and model
+X, y = np.random.random((1000, 10)).astype(np.float32), np.random.randint(0, 2, (1000, 1)).astype(np.float32)
+def create_model(input_shape): 
+    return tf.keras.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=input_shape),
-        tf.keras.layers.Dense(1, activation='sigmoid')  # Binary output
+        tf.keras.layers.Dense(1, activation='sigmoid')
     ])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    return model
 
-# Function to train and measure time on a specific device
-def train_model_on_device(device_name, X, y):
-    with tf.device(device_name):
-        model = create_model((X.shape[1],))  # Create model with the input shape based on data
-        start_time = time.time()
-        model.fit(X, y, epochs=5, batch_size=32, verbose=0)  # Train for 5 epochs
-        end_time = time.time()
-    return end_time - start_time
+# Train function
+def train_model(strategy, X, y):
+    with strategy.scope():
+        model = create_model((X.shape[1],))
+        start = time.time()
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        model.fit(X, y, epochs=5, batch_size=32, verbose=0)
+        return time.time() - start
 
-# Generate the synthetic dataset
-X, y = create_synthetic_data()
-
-# Measure training time on CPU
-cpu_time = train_model_on_device('/CPU:0', X, y)
+# Train on CPU
+cpu_time = train_model(tf.distribute.OneDeviceStrategy('/CPU:0'), X, y)
 print(f"Training time on CPU: {cpu_time:.2f} seconds")
 
-# Check if a TPU is available and measure the time
-if "TPU" in tf.config.list_physical_devices():
-    tpu_device = '/TPU:0'  # TPU device name
-    tpu_time = train_model_on_device(tpu_device, X, y)
+# Train on TPU if available
+try:
+    resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
+    tf.tpu.experimental.initialize_tpu_system(resolver)
+    tpu_time = train_model(tf.distribute.TPUStrategy(resolver), X, y)
     print(f"Training time on TPU: {tpu_time:.2f} seconds")
-else:
+except ValueError:
     print("No TPU found. Skipping TPU test.")
