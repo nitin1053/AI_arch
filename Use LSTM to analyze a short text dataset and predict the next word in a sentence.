@@ -1,0 +1,45 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Embedding
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+# Sample text dataset
+text = "LSTM is a type of recurrent neural network used for processing sequential data."
+
+# Tokenize the text and create sequences
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts([text])
+sequences = tokenizer.texts_to_sequences([text])[0]
+
+# Prepare the data: input sequence and next word
+X, y = [], []
+for i in range(4, len(sequences)):
+    X.append(sequences[i-4:i])
+    y.append(sequences[i])
+
+X, y = np.array(X), np.array(y)
+X = pad_sequences(X, maxlen=4, padding='pre')
+
+# Build the LSTM model
+model = Sequential([
+    Embedding(len(tokenizer.word_index) + 1, 10, input_length=4),
+    LSTM(50),
+    Dense(len(tokenizer.word_index) + 1, activation='softmax')
+])
+
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+
+# Train the model
+model.fit(X, y, epochs=50, verbose=0)
+
+# Predict the next word
+def predict_next_word(input_text):
+    sequence = tokenizer.texts_to_sequences([input_text])[0]
+    sequence = pad_sequences([sequence], maxlen=4, padding='pre')
+    pred = model.predict(sequence, verbose=0)
+    return tokenizer.index_word[np.argmax(pred)]
+
+# Example usage
+print(predict_next_word("LSTM is a"))
