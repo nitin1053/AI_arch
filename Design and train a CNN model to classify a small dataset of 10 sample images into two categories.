@@ -1,0 +1,37 @@
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+import tensorflow_datasets as tfds
+
+# Load the Cats vs Dogs dataset
+dataset, info = tfds.load("cats_vs_dogs", with_info=True, as_supervised=True)
+train_data, val_data = dataset["train"].take(2000), dataset["train"].skip(2000).take(1000)  # Limit to small subsets
+
+# Preprocessing function
+def preprocess(image, label):
+    image = tf.image.resize(image, (64, 64)) / 255.0  # Resize and normalize
+    return image, label
+
+train_data = train_data.map(preprocess).batch(32).shuffle(1000)
+val_data = val_data.map(preprocess).batch(32)
+
+# CNN model
+model = Sequential([
+    Conv2D(16, (3, 3), activation='relu', input_shape=(64, 64, 3)),
+    MaxPooling2D((2, 2)),
+    Conv2D(32, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(64, activation='relu'),
+    Dense(1, activation='sigmoid')  # Binary classification
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(train_data, validation_data=val_data, epochs=5)
+
+# Evaluate the model
+loss, accuracy = model.evaluate(val_data)
+print(f"Validation accuracy: {accuracy:.2f}")
