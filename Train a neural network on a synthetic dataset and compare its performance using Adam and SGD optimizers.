@@ -1,0 +1,49 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Step 1: Create a synthetic dataset
+def create_synthetic_data(num_samples=1000, num_features=10):
+    X = np.random.random((num_samples, num_features))  # Random feature data
+    y = np.random.randint(0, 2, size=(num_samples, 1))  # Random binary labels
+    return X, y
+
+# Step 2: Define a simple neural network model
+def create_model(input_shape, optimizer):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(64, activation='relu', input_shape=input_shape),
+        tf.keras.layers.Dense(1, activation='sigmoid')  # Binary output
+    ])
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Step 3: Train and evaluate the model with Adam and SGD optimizers
+def train_and_evaluate(optimizer, X, y):
+    model = create_model((X.shape[1],), optimizer)
+    history = model.fit(X, y, epochs=10, batch_size=32, verbose=0, validation_split=0.2)
+    return history.history['accuracy'], history.history['val_accuracy']
+
+# Create the synthetic dataset
+X, y = create_synthetic_data()
+
+# Train and evaluate using Adam optimizer
+adam_train_acc, adam_val_acc = train_and_evaluate('adam', X, y)
+
+# Train and evaluate using SGD optimizer
+sgd_train_acc, sgd_val_acc = train_and_evaluate('sgd', X, y)
+
+# Step 4: Compare the performance
+epochs = range(1, 11)
+
+# Plot training and validation accuracy
+plt.figure(figsize=(10, 6))
+plt.plot(epochs, adam_train_acc, label='Adam - Train Accuracy')
+plt.plot(epochs, adam_val_acc, label='Adam - Validation Accuracy')
+plt.plot(epochs, sgd_train_acc, label='SGD - Train Accuracy')
+plt.plot(epochs, sgd_val_acc, label='SGD - Validation Accuracy')
+
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.title('Comparison of Adam and SGD Optimizers')
+plt.legend()
+plt.show()
