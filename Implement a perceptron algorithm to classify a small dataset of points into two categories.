@@ -1,0 +1,46 @@
+import numpy as np
+dataset = np.array([
+    [2, 3, 1],  # Point (2, 3) belongs to class 1
+    [1, 1, -1], # Point (1, 1) belongs to class -1
+    [4, 5, 1],  # Point (4, 5) belongs to class 1
+    [1, 0, -1], # Point (1, 0) belongs to class -1
+])
+X = dataset[:, :-1]  # Features
+y = dataset[:, -1]   # Labels
+
+# Initialize weights and bias
+weights = np.zeros(X.shape[1])
+bias = 0
+
+# Define the learning rate and number of epochs
+learning_rate = 0.1
+epochs = 10
+
+# Perceptron training algorithm
+for epoch in range(epochs):
+    print(f"Epoch {epoch + 1}")
+    for i in range(len(X)):
+        # Compute the linear combination
+        linear_output = np.dot(X[i], weights) + bias
+        # Apply the step function
+        prediction = 1 if linear_output >= 0 else -1
+        # Update weights and bias if the prediction is wrong
+        if prediction != y[i]:
+            weights += learning_rate * y[i] * X[i]
+            bias += learning_rate * y[i]
+            print(f"Updated weights: {weights}, Updated bias: {bias}")
+    print()
+
+# Print final weights and bias
+print("Final weights:", weights)
+print("Final bias:", bias)
+
+# Prediction function
+def predict(point):
+    linear_output = np.dot(point, weights) + bias
+    return 1 if linear_output >= 0 else -1
+
+# Test the perceptron
+test_points = np.array([[2, 2], [3, 4], [0, 1]])
+predictions = [predict(point) for point in test_points]
+print("Predictions for test points:", predictions)
