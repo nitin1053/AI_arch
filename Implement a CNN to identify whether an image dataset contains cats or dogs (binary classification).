@@ -1,0 +1,65 @@
+import tensorflow as tf
+import tensorflow_datasets as tfds
+import matplotlib.pyplot as plt
+
+# Step 1: Download and load the dataset
+# Using TensorFlow Datasets to load the Dogs vs Cats dataset
+(train_data, test_data), dataset_info = tfds.load(
+    'cats_vs_dogs',
+    split=['train[:80%]', 'train[80%:]'],  # Split the dataset into training and testing
+    as_supervised=True,  # Return images and labels as tuples (image, label)
+    with_info=True
+)
+
+# Step 2: Preprocess the data (resize and normalize)
+def preprocess_image(image, label):
+    image = tf.image.resize(image, (150, 150))  # Resize images to 150x150
+    image = image / 255.0  # Normalize pixel values to [0, 1]
+    return image, label
+
+# Apply preprocessing to the training and test data
+train_data = train_data.map(preprocess_image).batch(32).prefetch(tf.data.experimental.AUTOTUNE)
+test_data = test_data.map(preprocess_image).batch(32).prefetch(tf.data.experimental.AUTOTUNE)
+
+# Step 3: Define the CNN Model
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
+    tf.keras.layers.MaxPooling2D(2, 2),
+
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2, 2),
+
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2, 2),
+
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')  # Output layer for binary classification
+])
+
+# Step 4: Compile the model
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+
+# Step 5: Train the model
+history = model.fit(
+    train_data,
+    epochs=10,
+    validation_data=test_data
+)
+
+# Step 6: Evaluate the model
+test_loss, test_acc = model.evaluate(test_data)
+print(f'Test accuracy: {test_acc:.2f}')
+
+# Step 7: Plot training and validation accuracy
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.title('Training vs Validation Accuracy')
+plt.legend()
+plt.show()
