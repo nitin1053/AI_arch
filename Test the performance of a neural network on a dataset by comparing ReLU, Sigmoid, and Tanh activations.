@@ -1,0 +1,29 @@
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.datasets import mnist
+
+# Load and preprocess MNIST dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+y_train, y_test = tf.keras.utils.to_categorical(y_train, 10), tf.keras.utils.to_categorical(y_test, 10)
+
+# Function to create, train, and evaluate a model
+def evaluate_activation(activation):
+    model = Sequential([
+        Flatten(input_shape=(28, 28)),
+        Dense(128, activation=activation),
+        Dense(10, activation="softmax")
+    ])
+    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+    model.fit(x_train, y_train, epochs=5, batch_size=32, validation_split=0.2, verbose=0)
+    return model.evaluate(x_test, y_test, verbose=0)[1]
+
+# Evaluate models with different activations
+activations = ["relu", "sigmoid", "tanh"]
+results = {act: evaluate_activation(act) for act in activations}
+
+# Display results
+print("\nPerformance Comparison:")
+for act, acc in results.items():
+    print(f"{act}: {acc:.4f}")
