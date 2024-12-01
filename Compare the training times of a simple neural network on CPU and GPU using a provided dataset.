@@ -1,0 +1,44 @@
+import tensorflow as tf
+import time
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize the dataset
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+y_train = tf.keras.utils.to_categorical(y_train, 10)
+y_test = tf.keras.utils.to_categorical(y_test, 10)
+
+# Define a simple neural network model
+def create_model():
+    model = Sequential([
+        Flatten(input_shape=(28, 28)),
+        Dense(128, activation='relu'),
+        Dense(10, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# Function to train and measure time
+def train_model_on_device(device_name):
+    with tf.device(device_name):
+        model = create_model()
+        start_time = time.time()
+        model.fit(x_train, y_train, epochs=5, batch_size=32, verbose=0)
+        end_time = time.time()
+    return end_time - start_time
+
+# Measure training time on CPU
+cpu_time = train_model_on_device('/CPU:0')
+print(f"Training time on CPU: {cpu_time:.2f} seconds")
+
+# Measure training time on GPU (if available)
+if tf.config.list_physical_devices('GPU'):
+    gpu_time = train_model_on_device('/GPU:0')
+    print(f"Training time on GPU: {gpu_time:.2f} seconds")
+else:
+    print("No GPU found. Skipping GPU test.")
